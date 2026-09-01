@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: aura-clothing-crm
+    env: node
+    plan: standard
+    buildCommand: npm run install:all && npm run build
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+    disk:
+      name: aura-crm-data
+      mountPath: /app/backend/data
+      sizeGB: 1

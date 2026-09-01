@@ -1,0 +1,15 @@
+{
+  "name": "clothing-retail-crm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Retail Customer Profile & Lead Management System for Clothing Stores",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build",
+    "install:all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["retail", "crm", "lead-management", "clothing", "fashion", "pos-integration"],
+  "author": "",
+  "license": "MIT"
+}
