@@ -38,20 +38,20 @@ export const IncomingLeadModal: React.FC<IncomingLeadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/70 backdrop-blur-sm animate-in zoom-in-95 duration-200">
-      <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border-2 border-brand-500 overflow-hidden flex flex-col animate-bounce-subtle">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/70 backdrop-blur-sm animate-in zoom-in-95 duration-200">
+      <div className="bg-white w-full max-w-lg max-h-[92dvh] overflow-y-auto rounded-2xl sm:rounded-3xl shadow-2xl border-2 border-brand-500 flex flex-col">
         
         {/* Pulsating Header */}
-        <div className="bg-gradient-to-r from-brand-600 via-brand-700 to-amber-600 p-5 text-white flex items-center justify-between relative overflow-hidden">
+        <div className="bg-gradient-to-r from-brand-600 via-brand-700 to-amber-600 p-4 sm:p-5 text-white flex items-center justify-between relative overflow-hidden shrink-0">
           <div className="flex items-center space-x-3 z-10">
-            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center animate-ping-slow">
-              <BellRing className="w-6 h-6 text-amber-200" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+              <BellRing className="w-5 h-5 sm:w-6 sm:h-6 text-amber-200" />
             </div>
             <div>
-              <div className="text-xs uppercase tracking-wider font-semibold text-amber-200">
+              <div className="text-[10px] sm:text-xs uppercase tracking-wider font-semibold text-amber-200">
                 Front Desk Lead Routing
               </div>
-              <h2 className="text-lg font-serif font-bold leading-tight">
+              <h2 className="text-base sm:text-lg font-serif font-bold leading-tight">
                 New Customer Assigned to You!
               </h2>
             </div>
@@ -65,7 +65,7 @@ export const IncomingLeadModal: React.FC<IncomingLeadModalProps> = ({
         </div>
 
         {/* Customer Context Summary */}
-        <div className="p-6 space-y-5">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           
           {/* Customer Main Info */}
           <div className="flex items-start justify-between border-b border-stone-100 pb-4">

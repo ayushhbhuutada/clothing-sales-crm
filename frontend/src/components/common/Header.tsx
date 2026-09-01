@@ -223,8 +223,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Navigation Tabs Bar */}
-        <div className="flex space-x-1 overflow-x-auto py-2 -mb-px scrollbar-none border-t border-stone-100">
+        {/* Navigation Tabs Bar (Desktop / Tablet Scroll) */}
+        <div className="hidden sm:flex space-x-1 overflow-x-auto py-2 -mb-px scrollbar-none border-t border-stone-100">
           <button
             onClick={() => setActiveTab('reception')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'reception' ? 'bg-brand-600 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'}`}
@@ -268,6 +268,66 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Fixed at bottom on smartphones) */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200 px-2 py-1.5 flex justify-around items-center shadow-lg safe-area-inset-bottom">
+        <button
+          onClick={() => setActiveTab('reception')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+            activeTab === 'reception' ? 'text-brand-700 font-bold' : 'text-stone-500'
+          }`}
+        >
+          <span className="text-base">🛎️</span>
+          <span className="text-[10px] mt-0.5">Reception</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('sales')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all relative ${
+            activeTab === 'sales' ? 'text-brand-700 font-bold' : 'text-stone-500'
+          }`}
+        >
+          <span className="text-base">👗</span>
+          <span className="text-[10px] mt-0.5">My Leads</span>
+          {currentStaff && (currentStaff.active_leads_count || 0) > 0 && (
+            <span className="absolute top-0 right-1 w-4 h-4 bg-brand-600 text-white rounded-full text-[9px] font-bold flex items-center justify-center animate-pulse">
+              {currentStaff.active_leads_count}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('customers')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+            activeTab === 'customers' ? 'text-brand-700 font-bold' : 'text-stone-500'
+          }`}
+        >
+          <span className="text-base">👥</span>
+          <span className="text-[10px] mt-0.5">Profiles</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('import')}
+          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+            activeTab === 'import' ? 'text-brand-700 font-bold' : 'text-stone-500'
+          }`}
+        >
+          <span className="text-base">📥</span>
+          <span className="text-[10px] mt-0.5">Import</span>
+        </button>
+
+        {(currentStaff?.role === 'store_manager' || currentStaff?.role === 'owner' || currentStaff?.role === 'admin' || !currentStaff) && (
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+              activeTab === 'analytics' ? 'text-brand-700 font-bold' : 'text-stone-500'
+            }`}
+          >
+            <span className="text-base">📊</span>
+            <span className="text-[10px] mt-0.5">Radar</span>
+          </button>
+        )}
+      </nav>
     </header>
   );
 };

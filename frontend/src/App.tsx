@@ -57,7 +57,7 @@ const MainApp: React.FC = () => {
       />
 
       {/* Main View Area */}
-      <main className="flex-1 pb-16">
+      <main className="flex-1 pb-24 sm:pb-16">
         {activeTab === 'reception' && (
           <ReceptionView
             onOpenCustomerProfile={handleOpenCustomerProfile}

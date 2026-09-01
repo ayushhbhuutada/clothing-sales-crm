@@ -130,59 +130,60 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-stone-900/70 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-4xl rounded-2xl sm:rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[95vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-stone-900/70 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-4xl h-full sm:h-auto max-h-[100dvh] sm:max-h-[92vh] rounded-none sm:rounded-3xl shadow-2xl border-0 sm:border border-stone-200 overflow-hidden flex flex-col">
         
         {/* Top Sticky Bar */}
-        <div className="px-6 py-4 bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center font-bold text-lg text-white shadow-md">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-stone-900 via-stone-800 to-stone-900 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center font-bold text-base sm:text-lg text-white shadow-md shrink-0">
               {profile?.name ? profile.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
             </div>
-            <div>
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-bold font-serif">{profile?.name || 'Customer Profile'}</h2>
+            <div className="min-w-0">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <h2 className="text-base sm:text-lg font-bold font-serif truncate">{profile?.name || 'Customer Profile'}</h2>
                 {profile?.tags && profile.tags.includes('VIP') && (
-                  <span className="text-[10px] font-bold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full">
-                    ⭐ VIP Client
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/40 px-1.5 sm:px-2 py-0.5 rounded-full shrink-0">
+                    ⭐ VIP
                   </span>
                 )}
                 {profile?.is_imported_placeholder === 1 && (
-                  <span className="text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/40 px-2 py-0.5 rounded-full">
-                    POS Imported
+                  <span className="text-[9px] sm:text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/40 px-1.5 sm:px-2 py-0.5 rounded-full shrink-0">
+                    POS
                   </span>
                 )}
               </div>
-              <div className="text-xs text-stone-300 flex items-center space-x-2 mt-0.5">
-                <Phone className="w-3 h-3 text-stone-400" />
+              <div className="text-[11px] sm:text-xs text-stone-300 flex items-center space-x-1.5 mt-0.5">
+                <Phone className="w-3 h-3 text-stone-400 shrink-0" />
                 <span className="font-mono">+91 {profile?.phone_number}</span>
                 {profile?.branch_name && (
                   <>
                     <span>•</span>
-                    <span>{profile.branch_name}</span>
+                    <span className="truncate hidden sm:inline">{profile.branch_name}</span>
                   </>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
             {profile && (
               <button
                 onClick={() => {
                   onClose();
                   onOpenLeadAssign(profile);
                 }}
-                className="bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-md transition-colors flex items-center space-x-1.5"
+                className="bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-[11px] sm:text-xs font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl shadow-md transition-colors flex items-center space-x-1 sm:space-x-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                <span>Assign to Sales Rep</span>
+                <span className="hidden sm:inline">Assign to Sales Rep</span>
+                <span className="sm:hidden">Assign</span>
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="text-stone-400 hover:text-white p-2 rounded-xl hover:bg-stone-800 transition-colors"
+              className="text-stone-400 hover:text-white p-1.5 sm:p-2 rounded-xl hover:bg-stone-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -196,7 +197,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
           <div className="flex-1 overflow-y-auto divide-y divide-stone-100">
             
             {/* Quick Metrics Header Card */}
-            <div className="p-6 bg-stone-50/70 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-3.5 sm:p-6 bg-stone-50/70 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
               <div className="bg-white p-3.5 rounded-2xl border border-stone-200 shadow-2xs">
                 <div className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Lifetime Spend (LTV)</div>
                 <div className="text-lg font-bold text-stone-900 mt-1 font-serif">
@@ -567,47 +568,84 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
 
             {/* TAB 2: FULL PURCHASE TIMELINE (Section 4.4 Spec) */}
             {activeTab === 'purchases' && (
-              <div className="p-6 space-y-4">
-                <div className="flex items-center justify-between text-xs text-stone-500">
-                  <span>Showing {profile.purchases?.length || 0} imported/recorded billing transactions</span>
+              <div className="p-4 sm:p-6 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-stone-500 gap-1">
+                  <span>Showing {profile.purchases?.length || 0} billing transactions</span>
                   <span className="font-bold text-stone-900">Total Billed: ₹{(profile.total_spend || 0).toLocaleString('en-IN')}</span>
                 </div>
 
                 {profile.purchases && profile.purchases.length > 0 ? (
-                  <div className="overflow-x-auto rounded-2xl border border-stone-200">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-semibold uppercase tracking-wider text-[10px]">
-                        <tr>
-                          <th className="py-3 px-4">Date</th>
-                          <th className="py-3 px-4">Invoice #</th>
-                          <th className="py-3 px-4">Item & Category</th>
-                          <th className="py-3 px-4">Size & Color</th>
-                          <th className="py-3 px-4 text-right">Qty</th>
-                          <th className="py-3 px-4 text-right">Net Amount</th>
-                          <th className="py-3 px-4">Sold By</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-stone-100">
-                        {profile.purchases.map((p) => (
-                          <tr key={p.id} className="hover:bg-stone-50/60 transition-colors">
-                            <td className="py-3 px-4 font-mono text-stone-600 whitespace-nowrap">{p.purchase_date}</td>
-                            <td className="py-3 px-4 font-mono font-bold text-stone-900">{p.invoice_number}</td>
-                            <td className="py-3 px-4">
-                              <div className="font-semibold text-stone-900">{p.item_name}</div>
-                              <div className="text-[10px] text-stone-400">{p.category}</div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="text-stone-700">{p.size || 'Free Size'}</div>
-                              <div className="text-[10px] text-stone-400">{p.color || '-'}</div>
-                            </td>
-                            <td className="py-3 px-4 text-right font-medium text-stone-700">{p.quantity}</td>
-                            <td className="py-3 px-4 text-right font-bold text-brand-700">₹{p.final_amount.toLocaleString('en-IN')}</td>
-                            <td className="py-3 px-4 text-stone-500">{p.sold_by_staff_name || 'Store'}</td>
+                  <>
+                    {/* Mobile Purchase Cards (<sm) */}
+                    <div className="sm:hidden space-y-3">
+                      {profile.purchases.map((p) => (
+                        <div key={p.id} className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="font-bold text-stone-900 text-sm">{p.item_name}</div>
+                              <div className="text-[11px] text-stone-500">{p.category || 'Clothing'}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold text-brand-700 text-sm font-serif">₹{p.final_amount.toLocaleString('en-IN')}</div>
+                              <div className="text-[10px] font-mono text-stone-400">Qty: {p.quantity}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-stone-200/60 text-[11px]">
+                            {p.size && (
+                              <span className="bg-white px-2 py-0.5 rounded-md border border-stone-200 font-semibold text-stone-700">
+                                Size: {p.size}
+                              </span>
+                            )}
+                            {p.color && (
+                              <span className="bg-white px-2 py-0.5 rounded-md border border-stone-200 text-stone-600">
+                                {p.color}
+                              </span>
+                            )}
+                            <span className="font-mono text-stone-400 ml-auto text-[10px]">
+                              {p.purchase_date} • {p.invoice_number}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Purchase Table (>=sm) */}
+                    <div className="hidden sm:block overflow-x-auto rounded-2xl border border-stone-200">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-stone-50 border-b border-stone-200 text-stone-500 font-semibold uppercase tracking-wider text-[10px]">
+                          <tr>
+                            <th className="py-3 px-4">Date</th>
+                            <th className="py-3 px-4">Invoice #</th>
+                            <th className="py-3 px-4">Item & Category</th>
+                            <th className="py-3 px-4">Size & Color</th>
+                            <th className="py-3 px-4 text-right">Qty</th>
+                            <th className="py-3 px-4 text-right">Net Amount</th>
+                            <th className="py-3 px-4">Sold By</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100">
+                          {profile.purchases.map((p) => (
+                            <tr key={p.id} className="hover:bg-stone-50/60 transition-colors">
+                              <td className="py-3 px-4 font-mono text-stone-600 whitespace-nowrap">{p.purchase_date}</td>
+                              <td className="py-3 px-4 font-mono font-bold text-stone-900">{p.invoice_number}</td>
+                              <td className="py-3 px-4">
+                                <div className="font-semibold text-stone-900">{p.item_name}</div>
+                                <div className="text-[10px] text-stone-400">{p.category}</div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="text-stone-700">{p.size || 'Free Size'}</div>
+                                <div className="text-[10px] text-stone-400">{p.color || '-'}</div>
+                              </td>
+                              <td className="py-3 px-4 text-right font-medium text-stone-700">{p.quantity}</td>
+                              <td className="py-3 px-4 text-right font-bold text-brand-700">₹{p.final_amount.toLocaleString('en-IN')}</td>
+                              <td className="py-3 px-4 text-stone-500">{p.sold_by_staff_name || 'Store'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 ) : (
                   <div className="p-8 bg-stone-50 rounded-2xl text-center text-xs text-stone-400">
                     No past purchases linked yet. Purchases are automatically synced when billing Excel/CSV files are uploaded.
