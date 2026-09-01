@@ -81,7 +81,7 @@ export const PhoneSearchBar: React.FC<PhoneSearchBarProps> = ({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => { if (results.length > 0 || query.length > 0) setIsOpen(true); }}
           placeholder="Type Customer Mobile Number (or Name) to lookup..."
-          className="w-full px-4 py-3.5 text-base sm:text-lg text-stone-900 placeholder:text-stone-400 bg-transparent outline-hidden font-medium"
+          className="w-full px-4 py-3.5 text-base sm:text-lg text-stone-900 placeholder:text-stone-400 bg-transparent outline-none focus:outline-none ring-0 border-0 focus:ring-0 font-medium"
           autoFocus
         />
 
@@ -108,7 +108,7 @@ export const PhoneSearchBar: React.FC<PhoneSearchBarProps> = ({
 
       {/* Autocomplete Results Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden z-40 animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-stone-100">
+        <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border-2 border-stone-200 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150 divide-y divide-stone-100">
           
           {/* Matches Found */}
           {results.length > 0 ? (
