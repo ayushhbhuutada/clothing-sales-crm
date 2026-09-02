@@ -1,6 +1,7 @@
 import initSqlJs, { Database } from 'sql.js';
 import fs from 'fs';
 import path from 'path';
+import { initTursoSync, asyncReplicateToTurso, asyncReplicateBatchToTurso } from '../services/turso.service';
 
 let dbInstance: Database | null = null;
 const dbDir = path.resolve(__dirname, '../../data');
@@ -23,6 +24,7 @@ export async function getDb(): Promise<Database> {
   }
 
   initSchema(dbInstance);
+  await initTursoSync(dbInstance);
   persistDb();
   return dbInstance;
 }
@@ -243,6 +245,7 @@ export function run(sql: string, params: any[] = []): void {
   if (!dbInstance) throw new Error('Database not initialized');
   dbInstance.run(sql, params);
   persistDb();
+  asyncReplicateToTurso(sql, params);
 }
 
 export function runBatch(queries: { sql: string; params: any[] }[]): void {
@@ -251,4 +254,5 @@ export function runBatch(queries: { sql: string; params: any[] }[]): void {
     dbInstance.run(q.sql, q.params);
   }
   persistDb();
+  asyncReplicateBatchToTurso(queries);
 }
