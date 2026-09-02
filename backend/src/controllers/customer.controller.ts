@@ -7,52 +7,60 @@ import { sseBroadcaster } from '../services/broadcaster';
 export const searchCustomers = (req: Request, res: Response): void => {
   try {
     const q = String(req.query.q || '').trim();
-    if (!q) {
-      res.json([]);
-      return;
-    }
-
-    const cleanDigits = q.replace(/[^\d]/g, '');
-
     let customers: any[] = [];
 
-    if (cleanDigits.length >= 2) {
-      // Phone number prefix or exact match
+    if (!q) {
+      // Default: Return top and recently active customers for directory list
       customers = query(`
         SELECT c.*, b.name as branch_name,
           (SELECT COUNT(*) FROM visits v WHERE v.customer_id = c.id) as total_visits,
           (SELECT COUNT(*) FROM purchases p WHERE p.customer_id = c.id) as total_purchases
         FROM customers c
         LEFT JOIN branches b ON c.branch_id = b.id
-        WHERE c.phone_number LIKE ? OR c.phone_number LIKE ?
-        ORDER BY 
-          CASE WHEN c.phone_number = ? THEN 0
-               WHEN c.phone_number LIKE ? THEN 1
-               ELSE 2 END,
-          c.total_spend DESC
-        LIMIT 10
-      `, [`%${cleanDigits}%`, `${cleanDigits}%`, cleanDigits, `${cleanDigits}%`]);
-    }
+        ORDER BY c.total_spend DESC, c.updated_at DESC
+        LIMIT 100
+      `);
+    } else {
+      const cleanDigits = q.replace(/[^\d]/g, '');
 
-    // Fallback: search by name if less than 5 matches or query has letters
-    if (customers.length < 5 && /[a-zA-Z]/.test(q)) {
-      const nameMatches = query(`
-        SELECT c.*, b.name as branch_name,
-          (SELECT COUNT(*) FROM visits v WHERE v.customer_id = c.id) as total_visits,
-          (SELECT COUNT(*) FROM purchases p WHERE p.customer_id = c.id) as total_purchases
-        FROM customers c
-        LEFT JOIN branches b ON c.branch_id = b.id
-        WHERE c.name LIKE ? OR c.email LIKE ?
-        ORDER BY c.total_spend DESC
-        LIMIT 10
-      `, [`%${q}%`, `%${q}%`]);
+      if (cleanDigits.length >= 2) {
+        // Phone number prefix or exact match
+        customers = query(`
+          SELECT c.*, b.name as branch_name,
+            (SELECT COUNT(*) FROM visits v WHERE v.customer_id = c.id) as total_visits,
+            (SELECT COUNT(*) FROM purchases p WHERE p.customer_id = c.id) as total_purchases
+          FROM customers c
+          LEFT JOIN branches b ON c.branch_id = b.id
+          WHERE c.phone_number LIKE ? OR c.phone_number LIKE ?
+          ORDER BY 
+            CASE WHEN c.phone_number = ? THEN 0
+                 WHEN c.phone_number LIKE ? THEN 1
+                 ELSE 2 END,
+            c.total_spend DESC
+          LIMIT 25
+        `, [`%${cleanDigits}%`, `${cleanDigits}%`, cleanDigits, `${cleanDigits}%`]);
+      }
 
-      // Merge results uniquely
-      const seen = new Set(customers.map(c => c.id));
-      for (const m of nameMatches) {
-        if (!seen.has(m.id)) {
-          customers.push(m);
-          seen.add(m.id);
+      // Fallback: search by name if less than 10 matches or query has letters
+      if (customers.length < 10 && /[a-zA-Z]/.test(q)) {
+        const nameMatches = query(`
+          SELECT c.*, b.name as branch_name,
+            (SELECT COUNT(*) FROM visits v WHERE v.customer_id = c.id) as total_visits,
+            (SELECT COUNT(*) FROM purchases p WHERE p.customer_id = c.id) as total_purchases
+          FROM customers c
+          LEFT JOIN branches b ON c.branch_id = b.id
+          WHERE c.name LIKE ? OR c.email LIKE ?
+          ORDER BY c.total_spend DESC
+          LIMIT 25
+        `, [`%${q}%`, `%${q}%`]);
+
+        // Merge results uniquely
+        const seen = new Set(customers.map(c => c.id));
+        for (const m of nameMatches) {
+          if (!seen.has(m.id)) {
+            customers.push(m);
+            seen.add(m.id);
+          }
         }
       }
     }

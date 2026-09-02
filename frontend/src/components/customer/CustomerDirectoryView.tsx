@@ -22,8 +22,7 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
   const loadCustomers = async () => {
     setLoading(true);
     try {
-      // If search query, use search; else fetch with default prefix
-      const res = await api.searchCustomers(searchQuery || '9');
+      const res = await api.searchCustomers(searchQuery.trim());
       setCustomers(res);
     } catch (err) {
       console.error('Failed to load customers:', err);
