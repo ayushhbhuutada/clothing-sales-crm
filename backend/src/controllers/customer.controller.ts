@@ -484,3 +484,33 @@ export const logVisit = (req: Request, res: Response): void => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const deleteCustomer = (req: Request, res: Response): void => {
+  try {
+    const { id } = req.params;
+    const customer = queryOne('SELECT id, name, phone_number FROM customers WHERE id = ? OR phone_number = ?', [id, id]);
+
+    if (!customer) {
+      res.status(404).json({ error: 'Customer not found' });
+      return;
+    }
+
+    const customerId = customer.id;
+
+    // Delete associated records in correct relational sequence
+    run('DELETE FROM purchases WHERE customer_id = ?', [customerId]);
+    run('DELETE FROM preferences WHERE customer_id = ?', [customerId]);
+    run('DELETE FROM leads WHERE customer_id = ?', [customerId]);
+    run('DELETE FROM visits WHERE customer_id = ?', [customerId]);
+    run('DELETE FROM activity_logs WHERE customer_id = ?', [customerId]);
+    run('DELETE FROM customers WHERE id = ?', [customerId]);
+
+    res.json({
+      success: true,
+      message: `Customer ${customer.name} and all associated purchase history deleted successfully.`
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

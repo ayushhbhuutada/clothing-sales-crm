@@ -113,6 +113,17 @@ export const api = {
     return res.json();
   },
 
+  async deleteCustomer(id: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch(`${API_BASE}/customers/${id}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to delete customer');
+    }
+    return res.json();
+  },
+
   async addPreference(customerId: string, data: { type: string; value: string; staff_id?: string }): Promise<any> {
     const res = await fetch(`${API_BASE}/customers/${customerId}/preferences`, {
       method: 'POST',

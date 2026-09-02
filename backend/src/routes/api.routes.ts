@@ -37,6 +37,7 @@ router.get('/customers/search', customerCtrl.searchCustomers);
 router.get('/customers/:id', customerCtrl.getCustomerProfile);
 router.post('/customers', customerCtrl.createCustomer);
 router.put('/customers/:id', customerCtrl.updateCustomer);
+router.delete('/customers/:id', customerCtrl.deleteCustomer);
 router.post('/customers/:id/preferences', customerCtrl.addPreference);
 router.delete('/customers/:id/preferences/:prefId', customerCtrl.deletePreference);
 router.post('/customers/:id/visits', customerCtrl.logVisit);

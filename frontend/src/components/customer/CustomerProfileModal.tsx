@@ -19,7 +19,8 @@ import {
   ThumbsDown,
   TrendingUp,
   CheckCircle,
-  Building
+  Building,
+  AlertTriangle
 } from 'lucide-react';
 import { CustomerProfileResponse, api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -43,6 +44,10 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'preferences' | 'purchases' | 'activity' | 'notes'>('preferences');
   
+  // Delete confirmation state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Quick preference addition state
   const [isAddingPref, setIsAddingPref] = useState(false);
   const [newPrefType, setNewPrefType] = useState<string>('top_size');
@@ -126,6 +131,20 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
       loadProfile();
     } catch (err) {
       console.error('Failed to log walk-in:', err);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!profile) return;
+    setIsDeleting(true);
+    try {
+      await api.deleteCustomer(profile.id);
+      setShowDeleteConfirm(false);
+      onClose();
+    } catch (err: any) {
+      alert(`Failed to delete customer: ${err.message}`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -702,10 +721,16 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
         )}
 
         {/* Footer */}
-        <div className="px-6 py-3 bg-stone-50 border-t border-stone-200 flex items-center justify-between shrink-0">
-          <div className="text-[11px] text-stone-400">
-            Customer ID: <code className="font-mono">{profile?.id}</code>
-          </div>
+        <div className="px-4 sm:px-6 py-3 bg-stone-50 border-t border-stone-200 flex items-center justify-between shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 transition-colors flex items-center space-x-1.5"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Customer</span>
+          </button>
+
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-xs font-bold text-stone-700 shadow-2xs transition-colors"
@@ -715,6 +740,45 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
         </div>
 
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && profile && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl border border-stone-200 p-6 space-y-5 animate-in zoom-in-95">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-stone-900">Delete {profile.name}'s Profile?</h3>
+              <p className="text-xs text-stone-500 mt-1">
+                Are you sure you want to permanently remove this customer (+91 {profile.phone_number}) and all their purchases, visits, and size preferences?
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl border border-stone-200 text-stone-600 text-xs font-semibold hover:bg-stone-100 transition-colors"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteCustomer}
+                disabled={isDeleting}
+                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold shadow-md shadow-rose-900/20 transition-colors flex items-center space-x-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeleting ? 'Deleting...' : 'Permanently Delete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
