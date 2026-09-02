@@ -39,7 +39,8 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
 
   const filteredCustomers = customers.filter(c => {
     if (selectedTag === 'all') return true;
-    return c.tags && c.tags.includes(selectedTag);
+    if (!c.tags) return false;
+    return Array.isArray(c.tags) ? c.tags.includes(selectedTag) : String(c.tags).includes(selectedTag);
   });
 
   return (

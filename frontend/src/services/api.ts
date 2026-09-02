@@ -66,9 +66,9 @@ export const api = {
   },
 
   // Customers
-  async searchCustomers(q: string): Promise<Customer[]> {
-    if (!q || q.trim().length === 0) return [];
-    const res = await fetch(`${API_BASE}/customers/search?q=${encodeURIComponent(q)}`);
+  async searchCustomers(q?: string): Promise<Customer[]> {
+    const queryStr = q && q.trim().length > 0 ? `?q=${encodeURIComponent(q.trim())}` : '';
+    const res = await fetch(`${API_BASE}/customers/search${queryStr}`);
     return res.json();
   },
 

@@ -222,7 +222,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
               <div className="bg-white p-3.5 rounded-2xl border border-stone-200 shadow-2xs">
                 <div className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Customer Since</div>
                 <div className="text-lg font-bold text-stone-900 mt-1">
-                  {new Date(profile.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}
+                  {profile.created_at ? new Date(profile.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : 'Recent'}
                 </div>
                 <div className="text-[10px] text-stone-500 mt-0.5">
                   Source: {profile.referred_by || 'Walk-in'}
