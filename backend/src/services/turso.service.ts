@@ -270,3 +270,38 @@ export function asyncReplicateBatchToTurso(queries: { sql: string; params: any[]
     }
   });
 }
+
+export async function checkTursoHealth(): Promise<{
+  connected: boolean;
+  configured: boolean;
+  cloudCustomers?: number;
+  cloudPurchases?: number;
+  error?: string;
+}> {
+  const url = process.env.TURSO_DATABASE_URL;
+  if (!url) {
+    return { configured: false, connected: false };
+  }
+
+  const client = getTursoClient();
+  if (!client) {
+    return { configured: true, connected: false, error: 'Could not initialize Turso client' };
+  }
+
+  try {
+    const custRes = await client.execute('SELECT COUNT(*) as cnt FROM customers');
+    const purchRes = await client.execute('SELECT COUNT(*) as cnt FROM purchases');
+    return {
+      configured: true,
+      connected: true,
+      cloudCustomers: (custRes.rows[0]?.cnt as number) || 0,
+      cloudPurchases: (purchRes.rows[0]?.cnt as number) || 0
+    };
+  } catch (err: any) {
+    return {
+      configured: true,
+      connected: false,
+      error: err.message
+    };
+  }
+}

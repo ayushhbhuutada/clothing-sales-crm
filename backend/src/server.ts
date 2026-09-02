@@ -23,11 +23,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Mount API routes
 app.use('/api', apiRouter);
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+import { checkTursoHealth } from './services/turso.service';
+
+// Health check endpoint with Turso Cloud diagnostics
+app.get('/api/health', async (req, res) => {
+  const tursoHealth = await checkTursoHealth();
   res.json({
     status: 'ok',
     service: 'Retail CRM & Lead Management System',
+    turso: tursoHealth,
     timestamp: new Date().toISOString()
   });
 });
