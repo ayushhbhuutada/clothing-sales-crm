@@ -57,7 +57,7 @@ Staff sign in by selecting their name on the PIN pad and entering their PIN. The
 - **Reception / Sales**: customer lookup, profiles, preferences, lead assignment, own leads
 - **Store Manager / Admin / Owner**: everything above plus imports, analytics and customer deletion
 
-Demo PINs for the seeded sample store are defined in `backend/src/db/seed.ts` and are hashed on first start. Change them before any real deployment. Production requires `JWT_SECRET` (see `backend/.env.example`).
+Demo PINs for the seeded sample store are defined in `backend/src/db/seed.ts` and are hashed on first start. Change them before any real deployment. The login-token secret comes from `JWT_SECRET` if set, otherwise it is generated once and stored in the database (see `backend/.env.example`).
 
 ---
 

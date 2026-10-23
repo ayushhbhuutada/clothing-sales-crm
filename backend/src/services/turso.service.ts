@@ -187,6 +187,11 @@ export async function initTursoSync(db: Database): Promise<boolean> {
         description TEXT NOT NULL,
         metadata TEXT,
         created_at TEXT NOT NULL
+      );`,
+      `CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        created_at TEXT NOT NULL
       );`
     ];
 
@@ -218,7 +223,8 @@ export async function initTursoSync(db: Database): Promise<boolean> {
         'purchases',
         'preferences',
         'leads',
-        'activity_logs'
+        'activity_logs',
+        'app_settings'
       ];
 
       for (const table of tables) {

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
-import { query, run } from '../db/database';
+import { query, queryOne, run } from '../db/database';
 
 export type StaffRole = 'receptionist' | 'sales_rep' | 'store_manager' | 'admin' | 'owner';
 export const MANAGER_ROLES: StaffRole[] = ['store_manager', 'admin', 'owner'];
@@ -15,27 +15,41 @@ export interface AuthStaff {
 const SESSION_TTL = '12h'; // one shop shift
 const SSE_TICKET_TTL = '60s';
 const PIN_HASH_PREFIX = 'scrypt$';
-const DEV_FALLBACK_SECRET = 'dev-only-insecure-jwt-secret-do-not-use-in-production';
+const JWT_SECRET_SETTING = 'jwt_secret';
 
-let warnedDevSecret = false;
+let jwtSecret: string | null = null;
 
-// Read lazily so dotenv has loaded before the first call
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (secret && secret.length >= 32) return secret;
-
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET must be set to a random string of at least 32 characters in production');
+// Must run after the database is initialised. Uses JWT_SECRET when provided (32+ chars);
+// otherwise generates a random secret once and keeps it in app_settings (replicated to Turso),
+// so sessions survive restarts and redeploys without any manual configuration.
+export function initJwtSecret(): void {
+  const envSecret = process.env.JWT_SECRET;
+  if (envSecret && envSecret.length >= 32) {
+    jwtSecret = envSecret;
+    console.log('🔑 Using JWT_SECRET from environment.');
+    return;
   }
-  if (!warnedDevSecret) {
-    console.warn('⚠️ JWT_SECRET not set (or shorter than 32 chars). Using an insecure development secret.');
-    warnedDevSecret = true;
+  if (envSecret) {
+    console.warn('⚠️ JWT_SECRET is shorter than 32 characters; ignoring it and using the stored secret.');
   }
-  return DEV_FALLBACK_SECRET;
+
+  const stored = queryOne<{ value: string }>('SELECT value FROM app_settings WHERE key = ?', [JWT_SECRET_SETTING]);
+  if (stored?.value && stored.value.length >= 32) {
+    jwtSecret = stored.value;
+    console.log('🔑 Using stored JWT secret.');
+    return;
+  }
+
+  jwtSecret = crypto.randomBytes(48).toString('hex');
+  run('INSERT OR REPLACE INTO app_settings (key, value, created_at) VALUES (?, ?, ?)', [
+    JWT_SECRET_SETTING, jwtSecret, new Date().toISOString()
+  ]);
+  console.log('🔑 Generated and stored a new JWT secret.');
 }
 
-export function assertAuthConfig(): void {
-  getJwtSecret();
+function getJwtSecret(): string {
+  if (!jwtSecret) throw new Error('JWT secret not initialised');
+  return jwtSecret;
 }
 
 export function isManager(role: string): boolean {

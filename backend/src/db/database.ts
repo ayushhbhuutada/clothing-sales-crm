@@ -210,6 +210,12 @@ function initSchema(db: Database) {
       created_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
     -- Indices for high performance (<50ms lookups)
     CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone_number);
     CREATE INDEX IF NOT EXISTS idx_customers_name ON customers(name);

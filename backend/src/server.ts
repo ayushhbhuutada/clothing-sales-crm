@@ -6,7 +6,7 @@ import { getDb } from './db/database';
 import { seedDatabase } from './db/seed';
 import apiRouter from './routes/api.routes';
 import { checkTursoHealth } from './services/turso.service';
-import { assertAuthConfig, migratePlaintextPins } from './services/auth.service';
+import { initJwtSecret, migratePlaintextPins } from './services/auth.service';
 import { apiLimiter, buildCors, buildHelmet } from './middleware/security';
 
 dotenv.config();
@@ -58,12 +58,11 @@ if (fs.existsSync(frontendDist)) {
 
 async function startServer() {
   try {
-    assertAuthConfig();
-
     console.log('🔄 Initializing SQLite database...');
     await getDb();
     await seedDatabase();
     migratePlaintextPins();
+    initJwtSecret();
 
     app.listen(PORT, () => {
       console.log(`🚀 Retail CRM Backend is running on http://localhost:${PORT}`);
