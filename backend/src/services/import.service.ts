@@ -224,9 +224,14 @@ export function processImport(
         newCustomersCreated++;
       } else {
         customerId = customer.id;
-        // Update customer statistics
+        // Update customer statistics. A visit is one invoice, not one line item:
+        // only count it if this customer has no purchase on this invoice yet.
+        const isNewInvoiceVisit = !queryOne(
+          'SELECT 1 FROM purchases WHERE customer_id = ? AND invoice_number = ? LIMIT 1',
+          [customerId, invoiceNo]
+        );
         const newTotalSpend = (customer.total_spend || 0) + finalAmt;
-        const newVisitCount = (customer.visit_count || 0) + 1;
+        const newVisitCount = (customer.visit_count || 0) + (isNewInvoiceVisit ? 1 : 0);
         const latestVisitDate = !customer.last_visit_date || purchaseDate > customer.last_visit_date
           ? purchaseDate
           : customer.last_visit_date;

@@ -50,16 +50,14 @@ npm run dev:frontend
 
 ---
 
-## 🔑 Default Staff PIN Codes (Demo)
+## 🔑 Staff Login & Permissions
 
-| Staff Member | Role / Specialty | PIN |
-|---|---|---|
-| **Simran Kaur** | Front Desk & Reception | `1111` |
-| **Rahul Verma** | Sales Stylist (Ethnic & Bridal) | `2222` |
-| **Ananya Sen** | Sales Stylist (Western & Contemporary) | `3333` |
-| **Vikram Malhotra** | Sales Stylist (Menswear & Formals) | `4444` |
-| **Pooja Mehta** | Store Manager | `5555` |
-| **Aditya Singhania** | Store Owner / Director | `9999` |
+Staff sign in by selecting their name on the PIN pad and entering their PIN. The server issues a 12-hour session token; every API call (except login and the health check) requires it.
+
+- **Reception / Sales**: customer lookup, profiles, preferences, lead assignment, own leads
+- **Store Manager / Admin / Owner**: everything above plus imports, analytics and customer deletion
+
+Demo PINs for the seeded sample store are defined in `backend/src/db/seed.ts` and are hashed on first start. Change them before any real deployment. Production requires `JWT_SECRET` (see `backend/.env.example`).
 
 ---
 

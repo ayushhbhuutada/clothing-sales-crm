@@ -218,9 +218,9 @@ export const createCustomer = (req: Request, res: Response): void => {
       tags,
       branch_id,
       walk_in_intent,
-      initial_note,
-      staff_id
+      initial_note
     } = req.body;
+    const staff_id = req.staff!.id;
 
     const cleanedPhone = cleanPhoneNumber(phone_number);
     if (!cleanedPhone) {
@@ -374,7 +374,8 @@ export const updateCustomer = (req: Request, res: Response): void => {
 export const addPreference = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
-    const { type, value, staff_id } = req.body;
+    const { type, value } = req.body;
+    const staff_id = req.staff!.id;
 
     if (!type || !value) {
       res.status(400).json({ error: 'Preference type and value are required' });
@@ -420,8 +421,8 @@ export const addPreference = (req: Request, res: Response): void => {
 
 export const deletePreference = (req: Request, res: Response): void => {
   try {
-    const { prefId } = req.params;
-    run('DELETE FROM preferences WHERE id = ?', [prefId]);
+    const { id, prefId } = req.params;
+    run('DELETE FROM preferences WHERE id = ? AND customer_id = ?', [prefId, id]);
     res.json({ success: true, message: 'Preference removed' });
   } catch (err: any) {
     res.status(500).json({ error: err.message });

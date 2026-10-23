@@ -39,7 +39,7 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
   onClose,
   onOpenLeadAssign
 }) => {
-  const { currentStaff } = useAuth();
+  const { currentStaff, isManager } = useAuth();
   const [profile, setProfile] = useState<CustomerProfileResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'preferences' | 'purchases' | 'activity' | 'notes'>('preferences');
@@ -722,14 +722,16 @@ export const CustomerProfileModal: React.FC<CustomerProfileModalProps> = ({
 
         {/* Footer */}
         <div className="px-4 sm:px-6 py-3 bg-stone-50 border-t border-stone-200 flex items-center justify-between shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 transition-colors flex items-center space-x-1.5"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Customer</span>
-          </button>
+          {isManager ? (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-200 transition-colors flex items-center space-x-1.5"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Customer</span>
+            </button>
+          ) : <span />}
 
           <button
             onClick={onClose}

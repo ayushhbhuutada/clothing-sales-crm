@@ -85,7 +85,7 @@ export const uploadAndImport = (req: Request, res: Response): void => {
       return;
     }
 
-    const { mapping, template_id, staff_id, branch_id } = req.body;
+    const { mapping, template_id, branch_id } = req.body;
     let fieldMapping = {};
 
     if (mapping) {
@@ -97,7 +97,7 @@ export const uploadAndImport = (req: Request, res: Response): void => {
       }
     }
 
-    const uploaderStaffId = staff_id || 'staff-1';
+    const uploaderStaffId = req.staff!.id;
     const result = processImport(
       req.file.buffer,
       req.file.originalname,
@@ -162,7 +162,8 @@ export const getReviewQueue = (req: Request, res: Response): void => {
 export const resolveReviewItem = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
-    const { action, customer_id, phone_number, customer_name, staff_id } = req.body;
+    const { action, customer_id, phone_number, customer_name } = req.body;
+    const staff_id = req.staff!.id;
 
     const item = queryOne('SELECT * FROM import_review_queue WHERE id = ?', [id]);
     if (!item) {
@@ -180,6 +181,7 @@ export const resolveReviewItem = (req: Request, res: Response): void => {
 
     if (action === 'link') {
       let targetCustomerId = customer_id;
+      let createdNewCustomer = false;
 
       // If creating new customer from modal
       if (!targetCustomerId && phone_number) {
@@ -194,6 +196,7 @@ export const resolveReviewItem = (req: Request, res: Response): void => {
           targetCustomerId = existing.id;
         } else {
           targetCustomerId = uuidv4();
+          createdNewCustomer = true;
           run(`
             INSERT INTO customers (id, phone_number, name, email, dob, anniversary, gender, referred_by, tags, total_spend, visit_count, last_visit_date, is_imported_placeholder, branch_id, created_at, updated_at)
             VALUES (?, ?, ?, null, null, null, 'Female', 'Review Queue Resolution', '["Manual Import Linked"]', ?, 1, ?, 0, 'branch-1', ?, ?)
@@ -223,6 +226,12 @@ export const resolveReviewItem = (req: Request, res: Response): void => {
       const amount = item.amount || 0;
       const rowHash = `${invoiceNo}#${pDate}#${itemName}#${amount.toFixed(2)}#RESOLVED`;
 
+      // A visit is one invoice, not one line item: only count it if this customer has no purchase on this invoice yet
+      const isNewInvoiceVisit = !queryOne(
+        'SELECT 1 FROM purchases WHERE customer_id = ? AND invoice_number = ? LIMIT 1',
+        [targetCustomerId, invoiceNo]
+      );
+
       run(`
         INSERT INTO purchases (id, customer_id, invoice_number, item_name, sku, category, size, color, quantity, price, discount, final_amount, purchase_date, branch_id, sold_by_staff_id, source_import_id, row_hash, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 0, ?, ?, 'branch-1', ?, ?, ?, ?)
@@ -244,12 +253,12 @@ export const resolveReviewItem = (req: Request, res: Response): void => {
         now
       ]);
 
-      // Update customer totals
-      const cust = queryOne('SELECT total_spend, visit_count FROM customers WHERE id = ?', [targetCustomerId]);
+      // Update customer totals (a customer created above already has this purchase's spend and visit)
+      const cust = createdNewCustomer ? null : queryOne('SELECT total_spend, visit_count FROM customers WHERE id = ?', [targetCustomerId]);
       if (cust) {
         run('UPDATE customers SET total_spend = ?, visit_count = ?, updated_at = ? WHERE id = ?', [
           (cust.total_spend || 0) + amount,
-          (cust.visit_count || 0) + 1,
+          (cust.visit_count || 0) + (isNewInvoiceVisit ? 1 : 0),
           now,
           targetCustomerId
         ]);

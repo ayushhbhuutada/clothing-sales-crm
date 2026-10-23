@@ -29,7 +29,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
   onOpenLeadAssign,
   onNavigateTab
 }) => {
-  const { currentBranch, allStaff } = useAuth();
+  const { currentBranch, allStaff, isManager } = useAuth();
   const [activeLeads, setActiveLeads] = useState<Lead[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [recentCustomers, setRecentCustomers] = useState<Customer[]>([]);
@@ -102,13 +102,15 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
               <UserPlus className="w-3.5 h-3.5" />
               <span>+ New Walk-in Registration</span>
             </button>
-            <button
-              onClick={() => onNavigateTab('import')}
-              className="inline-flex items-center space-x-1 text-brand-300 hover:text-brand-200 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10 transition-colors"
-            >
-              <FileSpreadsheet className="w-3.5 h-3.5" />
-              <span>Universal POS Import</span>
-            </button>
+            {isManager && (
+              <button
+                onClick={() => onNavigateTab('import')}
+                className="inline-flex items-center space-x-1 text-brand-300 hover:text-brand-200 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Universal POS Import</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

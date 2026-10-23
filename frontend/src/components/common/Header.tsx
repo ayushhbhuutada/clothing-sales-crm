@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onOpenNewCustomer
 }) => {
-  const { currentStaff, allStaff, currentBranch, branches, setCurrentBranch, setIsPinModalOpen, updateStatus } = useAuth();
+  const { currentStaff, isManager, allStaff, currentBranch, branches, setCurrentBranch, setIsPinModalOpen, updateStatus } = useAuth();
   const { isSoundEnabled, toggleSound, notifications } = useNotification();
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
@@ -251,14 +251,16 @@ export const Header: React.FC<HeaderProps> = ({
             <span>👥 Customer 360° Directory</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('import')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'import' ? 'bg-brand-600 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'}`}
-          >
-            <span>📥 Universal POS / Excel Import</span>
-          </button>
+          {isManager && (
+            <button
+              onClick={() => setActiveTab('import')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'import' ? 'bg-brand-600 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'}`}
+            >
+              <span>📥 Universal POS / Excel Import</span>
+            </button>
+          )}
 
-          {(currentStaff?.role === 'store_manager' || currentStaff?.role === 'owner' || currentStaff?.role === 'admin' || !currentStaff) && (
+          {isManager && (
             <button
               onClick={() => setActiveTab('analytics')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap flex items-center space-x-1.5 ${activeTab === 'analytics' ? 'bg-brand-600 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'}`}
@@ -306,17 +308,19 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-[10px] mt-0.5">Profiles</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab('import')}
-          className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
-            activeTab === 'import' ? 'text-brand-700 font-bold' : 'text-stone-500'
-          }`}
-        >
-          <span className="text-base">📥</span>
-          <span className="text-[10px] mt-0.5">Import</span>
-        </button>
+        {isManager && (
+          <button
+            onClick={() => setActiveTab('import')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${
+              activeTab === 'import' ? 'text-brand-700 font-bold' : 'text-stone-500'
+            }`}
+          >
+            <span className="text-base">📥</span>
+            <span className="text-[10px] mt-0.5">Import</span>
+          </button>
+        )}
 
-        {(currentStaff?.role === 'store_manager' || currentStaff?.role === 'owner' || currentStaff?.role === 'admin' || !currentStaff) && (
+        {isManager && (
           <button
             onClick={() => setActiveTab('analytics')}
             className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition-all ${

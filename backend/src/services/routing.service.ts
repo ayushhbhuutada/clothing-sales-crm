@@ -7,8 +7,9 @@ export interface RepRecommendation {
 }
 
 export function recommendSalesRep(customerId: string, branchId?: string): RepRecommendation {
-  const branchFilter = branchId ? `AND s.branch_id = '${branchId}'` : '';
-  
+  const branchFilter = branchId ? 'AND s.branch_id = ?' : '';
+  const branchParams = branchId ? [branchId] : [];
+
   // Get all sales reps with their active lead count
   const reps = query(`
     SELECT s.*, 
@@ -18,7 +19,7 @@ export function recommendSalesRep(customerId: string, branchId?: string): RepRec
     ORDER BY 
       CASE WHEN s.status = 'free' THEN 0 WHEN s.status = 'with_customer' THEN 1 WHEN s.status = 'busy' THEN 2 ELSE 3 END,
       active_leads_count ASC
-  `);
+  `, branchParams);
 
   if (reps.length === 0) {
     return {

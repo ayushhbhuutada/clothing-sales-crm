@@ -1,17 +1,21 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Staff, Branch, StaffStatus } from '../types';
-import { api } from '../services/api';
+import { api, authToken, setUnauthorizedHandler } from '../services/api';
 import { sseService } from '../services/sse';
+
+const MANAGER_ROLES = ['store_manager', 'admin', 'owner'];
 
 interface AuthContextType {
   currentStaff: Staff | null;
+  isManager: boolean;
+  isRestoringSession: boolean;
   allStaff: Staff[];
   branches: Branch[];
   currentBranch: Branch | null;
   setCurrentBranch: (branch: Branch) => void;
   isPinModalOpen: boolean;
   setIsPinModalOpen: (open: boolean) => void;
-  loginWithPin: (pin: string, staffId?: string) => Promise<boolean>;
+  loginWithPin: (pin: string, staffId: string) => Promise<boolean>;
   logout: () => void;
   updateStatus: (status: StaffStatus) => Promise<void>;
   refreshStaff: () => Promise<void>;
@@ -20,64 +24,80 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentStaff, setCurrentStaff] = useState<Staff | null>(() => {
-    const saved = localStorage.getItem('aura_current_staff');
-    return saved ? JSON.parse(saved) : null;
-  });
-
+  const [currentStaff, setCurrentStaff] = useState<Staff | null>(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [allStaff, setAllStaff] = useState<Staff[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [currentBranch, setCurrentBranch] = useState<Branch | null>(null);
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
+  // Before login only the public staff directory (names for the PIN pad) is available
+  const loadStaffDirectory = useCallback(async () => {
+    try {
+      setAllStaff(await api.getStaffDirectory());
+    } catch (err) {
+      console.error('Failed to load staff directory:', err);
+    }
+  }, []);
+
+  const loadSessionData = useCallback(async () => {
+    const [bList, sList] = await Promise.all([api.getBranches(), api.getStaffList()]);
+    setBranches(bList);
+    setCurrentBranch(prev => prev || bList[0] || null);
+    setAllStaff(sList);
+    // Pick up live fields (e.g. active lead count) for the signed-in staff member
+    setCurrentStaff(prev => (prev && sList.find(s => s.id === prev.id)) || prev);
+  }, []);
+
+  const endSession = useCallback(() => {
+    authToken.clear();
+    sseService.disconnect();
+    setCurrentStaff(null);
+    setBranches([]);
+    setCurrentBranch(null);
+    setIsPinModalOpen(true);
+    loadStaffDirectory();
+  }, [loadStaffDirectory]);
+
   const refreshStaff = async () => {
+    if (!currentStaff) return;
     try {
       const list = await api.getStaffList(currentBranch?.id);
       setAllStaff(list);
-      if (currentStaff) {
-        const updated = list.find(s => s.id === currentStaff.id);
-        if (updated) {
-          setCurrentStaff(updated);
-          localStorage.setItem('aura_current_staff', JSON.stringify(updated));
-        }
-      }
+      const updated = list.find(s => s.id === currentStaff.id);
+      if (updated) setCurrentStaff(updated);
     } catch (err) {
       console.error('Failed to load staff list:', err);
     }
   };
 
   useEffect(() => {
-    // Initial fetch of branches and staff
-    const init = async () => {
-      try {
-        const bList = await api.getBranches();
-        setBranches(bList);
-        if (bList.length > 0) {
-          const defaultB = bList[0];
-          setCurrentBranch(defaultB);
-        }
+    setUnauthorizedHandler(endSession);
+    return () => setUnauthorizedHandler(null);
+  }, [endSession]);
 
-        const sList = await api.getStaffList();
-        setAllStaff(sList);
-
-        // If no user is logged in, default to receptionist for convenient demo access
-        if (!currentStaff && sList.length > 0) {
-          const receptionist = sList.find(s => s.role === 'receptionist') || sList[0];
-          setCurrentStaff(receptionist);
-          localStorage.setItem('aura_current_staff', JSON.stringify(receptionist));
+  // Restore a still-valid session; otherwise require a PIN login (no automatic sign-in)
+  useEffect(() => {
+    const restore = async () => {
+      const token = authToken.get();
+      if (token && !authToken.isExpired(token)) {
+        try {
+          const me = await api.getMe();
+          setCurrentStaff(me);
+          await loadSessionData();
+          return;
+        } catch (err) {
+          console.error('Session restore failed:', err);
         }
-      } catch (err) {
-        console.error('Initialization error:', err);
       }
+      endSession();
     };
-    init();
+    restore().finally(() => setIsRestoringSession(false));
   }, []);
 
   useEffect(() => {
     if (currentStaff) {
       sseService.connect(currentStaff.id);
-    } else {
-      sseService.connect();
     }
   }, [currentStaff?.id]);
 
@@ -92,26 +112,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, [currentStaff]);
 
-  const loginWithPin = async (pin: string, staffId?: string): Promise<boolean> => {
-    try {
-      const res = await api.pinLogin(pin, staffId);
-      if (res.success && res.staff) {
-        setCurrentStaff(res.staff);
-        localStorage.setItem('aura_current_staff', JSON.stringify(res.staff));
-        setIsPinModalOpen(false);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      console.error('PIN Login failed:', err);
-      throw err;
+  const loginWithPin = async (pin: string, staffId: string): Promise<boolean> => {
+    const res = await api.pinLogin(pin, staffId);
+    if (res.success && res.token && res.staff) {
+      authToken.set(res.token);
+      setCurrentStaff(res.staff);
+      setIsPinModalOpen(false);
+      await loadSessionData();
+      return true;
     }
+    return false;
   };
 
   const logout = () => {
-    setCurrentStaff(null);
-    localStorage.removeItem('aura_current_staff');
-    setIsPinModalOpen(true);
+    endSession();
   };
 
   const updateStatus = async (status: StaffStatus) => {
@@ -129,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         currentStaff,
+        isManager: !!currentStaff && MANAGER_ROLES.includes(currentStaff.role),
+        isRestoringSession,
         allStaff,
         branches,
         currentBranch,

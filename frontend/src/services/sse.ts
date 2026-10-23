@@ -1,25 +1,38 @@
+import { api } from './api';
+
 type SSECallback = (data: any) => void;
+
+const RECONNECT_DELAY_MS = 3000;
 
 class SSEService {
   private eventSource: EventSource | null = null;
   private listeners: Map<string, Set<SSECallback>> = new Map();
-  private isConnecting = false;
   private currentStaffId: string | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-  connect(staffId?: string) {
-    if (this.currentStaffId === staffId && this.eventSource?.readyState === EventSource.OPEN) {
+  // Requires a logged-in session: the stream is opened with a short-lived ticket, never the session token
+  async connect(staffId: string) {
+    if (this.currentStaffId === staffId && this.eventSource && this.eventSource.readyState !== EventSource.CLOSED) {
       return;
     }
 
-    this.currentStaffId = staffId || null;
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
+    this.closeStream();
+    this.currentStaffId = staffId;
+
+    let ticket: string;
+    try {
+      ticket = await api.getSseTicket();
+    } catch (err) {
+      console.error('Failed to get live updates ticket:', err);
+      this.scheduleReconnect(staffId);
+      return;
     }
 
+    // A newer connect/disconnect happened while the ticket was being fetched
+    if (this.currentStaffId !== staffId) return;
+
     const baseUrl = import.meta.env.VITE_API_URL || '';
-    const url = staffId ? `${baseUrl}/api/events?staffId=${staffId}` : `${baseUrl}/api/events`;
-    this.isConnecting = true;
+    const url = `${baseUrl}/api/events?ticket=${encodeURIComponent(ticket)}`;
 
     try {
       this.eventSource = new EventSource(url);
@@ -43,16 +56,36 @@ class SSEService {
       };
 
       this.eventSource.onerror = () => {
-        this.isConnecting = false;
-        // EventSource will automatically attempt to reconnect
-      };
-
-      this.eventSource.onopen = () => {
-        this.isConnecting = false;
+        // EventSource retries on its own, but gives up (CLOSED) once the ticket has expired; get a fresh one
+        if (this.eventSource?.readyState === EventSource.CLOSED) {
+          this.scheduleReconnect(staffId);
+        }
       };
     } catch (err) {
       console.error('Failed to create EventSource:', err);
-      this.isConnecting = false;
+      this.scheduleReconnect(staffId);
+    }
+  }
+
+  private scheduleReconnect(staffId: string) {
+    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (this.currentStaffId === staffId) {
+        this.currentStaffId = null;
+        this.connect(staffId);
+      }
+    }, RECONNECT_DELAY_MS);
+  }
+
+  private closeStream() {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
     }
   }
 
@@ -74,10 +107,7 @@ class SSEService {
   }
 
   disconnect() {
-    if (this.eventSource) {
-      this.eventSource.close();
-      this.eventSource = null;
-    }
+    this.closeStream();
     this.currentStaffId = null;
   }
 }

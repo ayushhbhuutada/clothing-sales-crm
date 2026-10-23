@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider, useNotification } from './contexts/NotificationContext';
 import { Header } from './components/common/Header';
@@ -14,9 +14,18 @@ import { NewCustomerModal } from './components/reception/NewCustomerModal';
 import { LeadAssignModal } from './components/reception/LeadAssignModal';
 import { Customer } from './types';
 
+const MANAGER_TABS = ['import', 'analytics'];
+
 const MainApp: React.FC = () => {
-  const { currentStaff } = useAuth();
+  const { currentStaff, isManager, isRestoringSession } = useAuth();
   const [activeTab, setActiveTab] = useState<string>('reception');
+
+  // After a staff switch, leave manager-only tabs the new user cannot access
+  useEffect(() => {
+    if (!isManager && MANAGER_TABS.includes(activeTab)) {
+      setActiveTab('reception');
+    }
+  }, [isManager, activeTab]);
 
   // Modals state
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -46,9 +55,19 @@ const MainApp: React.FC = () => {
     }
   };
 
+  // Nothing but the PIN pad is shown until a staff member signs in
+  if (!currentStaff) {
+    return (
+      <div className="min-h-screen bg-stone-50 text-stone-900 flex items-center justify-center font-sans">
+        {isRestoringSession && <p className="text-sm text-stone-500">Loading…</p>}
+        {!isRestoringSession && <PINPadModal />}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 flex flex-col font-sans">
-      
+
       {/* Top Header & Navigation */}
       <Header
         activeTab={activeTab}
@@ -81,13 +100,13 @@ const MainApp: React.FC = () => {
           />
         )}
 
-        {activeTab === 'import' && (
+        {activeTab === 'import' && isManager && (
           <UniversalImportView
             onOpenCustomerProfile={handleOpenCustomerProfile}
           />
         )}
 
-        {activeTab === 'analytics' && (
+        {activeTab === 'analytics' && isManager && (
           <AnalyticsDashboard
             onOpenCustomerProfile={handleOpenCustomerProfile}
           />

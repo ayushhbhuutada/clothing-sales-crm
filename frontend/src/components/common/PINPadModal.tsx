@@ -13,6 +13,10 @@ export const PINPadModal: React.FC = () => {
   if (!isPinModalOpen) return null;
 
   const handleDigit = (digit: string) => {
+    if (!selectedStaff) {
+      setError('Select your name first.');
+      return;
+    }
     if (pin.length < 4) {
       const nextPin = pin + digit;
       setPin(nextPin);
@@ -35,7 +39,7 @@ export const PINPadModal: React.FC = () => {
     setError(null);
   };
 
-  const attemptLogin = async (pinCode: string, staffId?: string) => {
+  const attemptLogin = async (pinCode: string, staffId: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -53,12 +57,6 @@ export const PINPadModal: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleQuickDemoLogin = (staff: Staff, defaultPin: string) => {
-    setSelectedStaff(staff);
-    setPin(defaultPin);
-    attemptLogin(defaultPin, staff.id);
   };
 
   return (
@@ -90,12 +88,6 @@ export const PINPadModal: React.FC = () => {
             <div className="grid grid-cols-3 gap-2">
               {allStaff.map(staff => {
                 const isSelected = selectedStaff?.id === staff.id;
-                // Default test pins mapping for 1-click convenience
-                const testPin = staff.role === 'receptionist' ? '1111' :
-                                staff.name.includes('Rahul') ? '2222' :
-                                staff.name.includes('Ananya') ? '3333' :
-                                staff.name.includes('Vikram') ? '4444' :
-                                staff.name.includes('Pooja') ? '5555' : '9999';
 
                 return (
                   <button
@@ -118,9 +110,6 @@ export const PINPadModal: React.FC = () => {
                     />
                     <span className="text-xs font-bold text-stone-900 truncate w-full">{staff.name.split(' ')[0]}</span>
                     <span className="text-[10px] text-stone-500 uppercase tracking-tight">{staff.role.replace('_', ' ')}</span>
-                    <span className="text-[9px] text-brand-600 font-mono mt-1 bg-white px-1.5 py-0.2 rounded border border-brand-200">
-                      PIN: {testPin}
-                    </span>
                   </button>
                 );
               })}
@@ -129,34 +118,19 @@ export const PINPadModal: React.FC = () => {
 
           {/* Selected Staff Indicator */}
           {selectedStaff ? (
-            <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <img
-                  src={selectedStaff.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
-                  alt={selectedStaff.name}
-                  className="w-9 h-9 rounded-full object-cover"
-                />
-                <div>
-                  <div className="text-xs font-bold text-stone-900">{selectedStaff.name}</div>
-                  <div className="text-[11px] text-stone-500">{selectedStaff.specialty_category || selectedStaff.role}</div>
-                </div>
+            <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 flex items-center space-x-3">
+              <img
+                src={selectedStaff.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150'}
+                alt={selectedStaff.name}
+                className="w-9 h-9 rounded-full object-cover"
+              />
+              <div>
+                <div className="text-xs font-bold text-stone-900">{selectedStaff.name}</div>
+                <div className="text-[11px] text-stone-500">{selectedStaff.specialty_category || selectedStaff.role}</div>
               </div>
-              <button
-                onClick={() => {
-                  const testPin = selectedStaff.role === 'receptionist' ? '1111' :
-                                  selectedStaff.name.includes('Rahul') ? '2222' :
-                                  selectedStaff.name.includes('Ananya') ? '3333' :
-                                  selectedStaff.name.includes('Vikram') ? '4444' :
-                                  selectedStaff.name.includes('Pooja') ? '5555' : '9999';
-                  handleQuickDemoLogin(selectedStaff, testPin);
-                }}
-                className="text-[11px] font-semibold text-brand-700 bg-brand-100 hover:bg-brand-200 px-2.5 py-1.5 rounded-lg transition-colors"
-              >
-                1-Tap Login
-              </button>
             </div>
           ) : (
-            <p className="text-xs text-stone-500 text-center">Select a staff member above or enter any valid PIN.</p>
+            <p className="text-xs text-stone-500 text-center">Select your name above, then enter your 4-digit PIN.</p>
           )}
 
           {/* PIN Dots Display */}

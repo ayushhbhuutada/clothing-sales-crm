@@ -3,17 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { query, queryOne, run } from '../db/database';
 import { sseBroadcaster } from '../services/broadcaster';
 import { recommendSalesRep } from '../services/routing.service';
+import { isManager } from '../services/auth.service';
 
 export const assignLead = (req: Request, res: Response): void => {
   try {
     const {
       customer_id,
       assigned_to_staff_id,
-      assigned_by_staff_id,
       branch_id,
       walk_in_intent,
       notes
     } = req.body;
+    const assigned_by_staff_id = req.staff!.id;
 
     if (!customer_id || !assigned_to_staff_id) {
       res.status(400).json({ error: 'customer_id and assigned_to_staff_id are required' });
@@ -27,7 +28,11 @@ export const assignLead = (req: Request, res: Response): void => {
     }
 
     const assignedTo = queryOne('SELECT * FROM staff WHERE id = ?', [assigned_to_staff_id]);
-    const assignedBy = assigned_by_staff_id ? queryOne('SELECT * FROM staff WHERE id = ?', [assigned_by_staff_id]) : null;
+    if (!assignedTo) {
+      res.status(404).json({ error: 'Assigned staff member not found' });
+      return;
+    }
+    const assignedBy = queryOne('SELECT * FROM staff WHERE id = ?', [assigned_by_staff_id]);
 
     const leadId = uuidv4();
     const now = new Date().toISOString();
@@ -41,7 +46,7 @@ export const assignLead = (req: Request, res: Response): void => {
       customer_id,
       defaultBranchId,
       assigned_to_staff_id,
-      assigned_by_staff_id || 'staff-1',
+      assigned_by_staff_id,
       walk_in_intent || 'Assigned from Front Desk',
       notes || null,
       now,
@@ -72,7 +77,7 @@ export const assignLead = (req: Request, res: Response): void => {
     `, [
       uuidv4(),
       customer_id,
-      assigned_by_staff_id || 'staff-1',
+      assigned_by_staff_id,
       assignedBy?.name || 'Reception Staff',
       `Assigned lead to ${assignedTo?.name || 'Sales Rep'} (Intent: ${walk_in_intent || 'In-store consultation'})`,
       JSON.stringify({ leadId, assigned_to: assignedTo?.name, walk_in_intent }),
@@ -208,11 +213,22 @@ export const getMyLeads = (req: Request, res: Response): void => {
 export const updateLeadStatus = (req: Request, res: Response): void => {
   try {
     const { id } = req.params;
-    const { status, outcome_notes, staff_id } = req.body;
+    const { status, outcome_notes } = req.body;
+    const staff_id = req.staff!.id;
+
+    if (!['new', 'acknowledged', 'in_progress'].includes(status)) {
+      res.status(400).json({ error: 'Invalid lead status' });
+      return;
+    }
 
     const lead = queryOne('SELECT * FROM leads WHERE id = ?', [id]);
     if (!lead) {
       res.status(404).json({ error: 'Lead not found' });
+      return;
+    }
+
+    if (lead.assigned_to_staff_id !== staff_id && !isManager(req.staff!.role)) {
+      res.status(403).json({ error: 'Only the assigned stylist or a manager can update this lead' });
       return;
     }
 
@@ -231,15 +247,14 @@ export const updateLeadStatus = (req: Request, res: Response): void => {
       WHERE id = ?
     `, [status, ackTime, outcome_notes || null, now, id]);
 
-    const staff = staff_id ? queryOne('SELECT name FROM staff WHERE id = ?', [staff_id]) : null;
     run(`
       INSERT INTO activity_logs (id, customer_id, staff_id, staff_name, action_type, description, metadata, created_at)
       VALUES (?, ?, ?, ?, 'lead_status_updated', ?, ?, ?)
     `, [
       uuidv4(),
       lead.customer_id,
-      staff_id || lead.assigned_to_staff_id,
-      staff?.name || 'Sales Staff',
+      staff_id,
+      req.staff!.name,
       `Lead status updated to "${status}"`,
       JSON.stringify({ leadId: id, status }),
       now
@@ -267,9 +282,13 @@ export const closeLead = (req: Request, res: Response): void => {
       no_sale_reason,
       linked_invoice_number,
       sale_amount,
-      follow_up_date,
-      staff_id
+      follow_up_date
     } = req.body;
+
+    if (!['closed_sale', 'closed_no_sale', 'follow_up_needed'].includes(status)) {
+      res.status(400).json({ error: 'Invalid closing status' });
+      return;
+    }
 
     const lead = queryOne('SELECT * FROM leads WHERE id = ?', [id]);
     if (!lead) {
@@ -277,8 +296,14 @@ export const closeLead = (req: Request, res: Response): void => {
       return;
     }
 
+    if (lead.assigned_to_staff_id !== req.staff!.id && !isManager(req.staff!.role)) {
+      res.status(403).json({ error: 'Only the assigned stylist or a manager can close this lead' });
+      return;
+    }
+
     const now = new Date().toISOString();
-    const activeStaffId = staff_id || lead.assigned_to_staff_id;
+    // The stylist whose availability is freed is always the assigned one, even when a manager closes the lead
+    const activeStaffId = lead.assigned_to_staff_id;
 
     run(`
       UPDATE leads 
@@ -314,7 +339,6 @@ export const closeLead = (req: Request, res: Response): void => {
       sseBroadcaster.broadcast('STAFF_STATUS_CHANGED', { staffId: activeStaffId, status: 'free' });
     }
 
-    const staff = queryOne('SELECT name FROM staff WHERE id = ?', [activeStaffId]);
     let outcomeDesc = `Lead closed with status "${status}"`;
     if (status === 'closed_sale') outcomeDesc = `Sale completed! Invoice: ${linked_invoice_number || 'N/A'}, Amount: ₹${sale_amount || 0}`;
     if (status === 'closed_no_sale') outcomeDesc = `Closed (No Sale) — Reason: ${no_sale_reason || 'Not specified'}`;
@@ -326,8 +350,8 @@ export const closeLead = (req: Request, res: Response): void => {
     `, [
       uuidv4(),
       lead.customer_id,
-      activeStaffId,
-      staff?.name || 'Sales Rep',
+      req.staff!.id,
+      req.staff!.name,
       outcomeDesc,
       JSON.stringify({ leadId: id, status, no_sale_reason, sale_amount }),
       now

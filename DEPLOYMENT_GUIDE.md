@@ -54,6 +54,7 @@ With this method, Render builds both the React frontend and Node.js backend toge
 5. **Add Environment Variables**:
    - `NODE_ENV`: `production`
    - `PORT`: `5000`
+   - `JWT_SECRET`: a random string of 32+ characters (**required** — the server refuses to start in production without it). Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 6. **Attach Persistent Disk (Crucial for SQLite Database)**:
    - Scroll down to **Disks** $\rightarrow$ Click **Add Disk**.
    - **Name**: `crm-data`
@@ -72,7 +73,8 @@ If you prefer hosting the frontend on Vercel's global CDN:
 2. **Build Command**: `npm install && npm run build`
 3. **Start Command**: `node dist/server.js`
 4. Attach a 1GB persistent disk at `/app/data`.
-5. Note your backend URL (e.g., `https://aura-crm-api.onrender.com`).
+5. Add environment variables `JWT_SECRET` (32+ random characters) and `CORS_ORIGIN` (your Vercel URL, e.g. `https://aura-crm.vercel.app`; comma-separate several).
+6. Note your backend URL (e.g., `https://aura-crm-api.onrender.com`).
 
 ### Part 2: Deploy Frontend on Vercel
 1. Log in to [Vercel](https://vercel.com).

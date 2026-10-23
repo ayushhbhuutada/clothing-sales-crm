@@ -3,37 +3,38 @@ import { query, queryOne } from '../db/database';
 
 export const getKpis = (req: Request, res: Response): void => {
   try {
-    const { branch_id, time_range } = req.query;
-    const branchFilter = branch_id ? `AND branch_id = '${branch_id}'` : '';
+    const { branch_id } = req.query;
+    const branchFilter = branch_id ? 'AND branch_id = ?' : '';
+    const branchParams = branch_id ? [String(branch_id)] : [];
 
     // Footfall (total visits)
-    const totalVisitsRow = queryOne(`SELECT COUNT(*) as count FROM visits WHERE 1=1 ${branchFilter}`);
+    const totalVisitsRow = queryOne(`SELECT COUNT(*) as count FROM visits WHERE 1=1 ${branchFilter}`, branchParams);
     const totalVisits = totalVisitsRow?.count || 0;
 
     // Leads metrics
-    const totalLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE 1=1 ${branchFilter}`);
+    const totalLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE 1=1 ${branchFilter}`, branchParams);
     const totalLeads = totalLeadsRow?.count || 0;
 
-    const closedSaleLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE status = 'closed_sale' ${branchFilter}`);
+    const closedSaleLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE status = 'closed_sale' ${branchFilter}`, branchParams);
     const closedSaleLeads = closedSaleLeadsRow?.count || 0;
 
-    const closedNoSaleLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE status = 'closed_no_sale' ${branchFilter}`);
+    const closedNoSaleLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE status = 'closed_no_sale' ${branchFilter}`, branchParams);
     const closedNoSaleLeads = closedNoSaleLeadsRow?.count || 0;
 
-    const activeLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE status IN ('new', 'acknowledged', 'in_progress') ${branchFilter}`);
+    const activeLeadsRow = queryOne(`SELECT COUNT(*) as count FROM leads WHERE status IN ('new', 'acknowledged', 'in_progress') ${branchFilter}`, branchParams);
     const activeLeads = activeLeadsRow?.count || 0;
 
     // Conversion rate
     const conversionRate = totalLeads > 0 ? ((closedSaleLeads / totalLeads) * 100).toFixed(1) : '0';
 
     // Revenue & AOV
-    const revenueRow = queryOne(`SELECT SUM(final_amount) as total_rev, COUNT(*) as tx_count FROM purchases WHERE 1=1 ${branchFilter}`);
+    const revenueRow = queryOne(`SELECT SUM(final_amount) as total_rev, COUNT(*) as tx_count FROM purchases WHERE 1=1 ${branchFilter}`, branchParams);
     const totalRevenue = revenueRow?.total_rev || 0;
     const totalPurchases = revenueRow?.tx_count || 0;
     const avgOrderValue = totalPurchases > 0 ? (totalRevenue / totalPurchases).toFixed(0) : '0';
 
     // Total unique customers
-    const totalCustomersRow = queryOne(`SELECT COUNT(*) as count FROM customers WHERE 1=1 ${branchFilter}`);
+    const totalCustomersRow = queryOne(`SELECT COUNT(*) as count FROM customers WHERE 1=1 ${branchFilter}`, branchParams);
     const totalCustomers = totalCustomersRow?.count || 0;
 
     // Footfall vs. Conversion comparison by day (last 7 days)
@@ -69,7 +70,8 @@ export const getKpis = (req: Request, res: Response): void => {
 export const getRepPerformance = (req: Request, res: Response): void => {
   try {
     const { branch_id } = req.query;
-    const branchFilter = branch_id ? `AND s.branch_id = '${branch_id}'` : '';
+    const branchFilter = branch_id ? 'AND s.branch_id = ?' : '';
+    const branchParams = branch_id ? [String(branch_id)] : [];
 
     const reps = query(`
       SELECT 
@@ -85,7 +87,7 @@ export const getRepPerformance = (req: Request, res: Response): void => {
       WHERE s.role = 'sales_rep' ${branchFilter}
       GROUP BY s.id
       ORDER BY sales_closed DESC, total_leads DESC
-    `);
+    `, branchParams);
 
     const enriched = reps.map(r => {
       const convRate = r.total_leads > 0 ? ((r.sales_closed / r.total_leads) * 100).toFixed(1) : '0';

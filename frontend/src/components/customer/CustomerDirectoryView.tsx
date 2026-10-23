@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Customer } from '../../types';
 import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { Search, UserPlus, Phone, Sparkles, Filter, ArrowRight, User, Trash2, AlertTriangle, X, Check } from 'lucide-react';
 
 interface CustomerDirectoryViewProps {
@@ -14,6 +15,7 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
   onOpenNewCustomer,
   onOpenLeadAssign
 }) => {
+  const { isManager } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string>('all');
@@ -178,16 +180,18 @@ export const CustomerDirectoryView: React.FC<CustomerDirectoryViewProps> = ({
                           ⭐ VIP
                         </span>
                       )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCustomerToDelete(customer);
-                        }}
-                        title="Delete customer and data"
-                        className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {isManager && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCustomerToDelete(customer);
+                          }}
+                          title="Delete customer and data"
+                          className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
 

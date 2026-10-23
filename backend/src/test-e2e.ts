@@ -10,10 +10,31 @@ async function runE2ETests() {
   await getDb();
   await seedDatabase();
 
+  // Log in with the seeded demo staff (receptionist + owner)
+  const login = async (staffId: string, pin: string): Promise<string> => {
+    const res = await fetch('http://localhost:5000/api/auth/pin-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staff_id: staffId, pin_code: pin })
+    });
+    const data: any = await res.json();
+    if (!res.ok || !data.token) throw new Error(`Login failed for ${staffId}: ${data.error}`);
+    return data.token;
+  };
+  const receptionAuth = { Authorization: `Bearer ${await login('staff-1', '1111')}` };
+  const ownerAuth = { Authorization: `Bearer ${await login('staff-6', '9999')}` };
+
+  // Test 0: Protected endpoints reject anonymous requests
+  const anonRes = await fetch('http://localhost:5000/api/customers/search?q=98');
+  if (anonRes.status !== 401) {
+    throw new Error(`Test 0 Failed: anonymous request returned ${anonRes.status}, expected 401`);
+  }
+  console.log('✓ Anonymous API access rejected');
+
   // Test 1: Phone Search Performance (<50ms)
   console.log('\n--- Test 1: Phone Lookup Sub-second Search ---');
   const t0 = performance.now();
-  const searchRes = await fetch('http://localhost:5000/api/customers/search?q=9876543210');
+  const searchRes = await fetch('http://localhost:5000/api/customers/search?q=9876543210', { headers: receptionAuth });
   const searchData: any = await searchRes.json();
   const t1 = performance.now();
   console.log(`✓ Lookup latency: ${(t1 - t0).toFixed(2)}ms`);
@@ -35,7 +56,7 @@ async function runE2ETests() {
   console.log('\n--- Test 3: Lead Assignment & Workflow Transitions ---');
   const assignRes = await fetch('http://localhost:5000/api/leads/assign', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...receptionAuth },
     body: JSON.stringify({
       customer_id: 'cust-1',
       assigned_to_staff_id: rec.recommendedRep.id,
@@ -50,7 +71,7 @@ async function runE2ETests() {
   // Transition to acknowledged
   await fetch(`http://localhost:5000/api/leads/${assignData.leadId}/status`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...ownerAuth },
     body: JSON.stringify({ status: 'acknowledged', staff_id: rec.recommendedRep.id })
   });
   console.log('✓ Lead acknowledged by rep');
@@ -58,7 +79,7 @@ async function runE2ETests() {
   // Close lead with Sale
   const closeRes = await fetch(`http://localhost:5000/api/leads/${assignData.leadId}/close`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...ownerAuth },
     body: JSON.stringify({
       status: 'closed_sale',
       linked_invoice_number: 'TEST-INV-9901',
@@ -151,11 +172,17 @@ async function runE2ETests() {
 
   // Test 5: Analytics & KPIs
   console.log('\n--- Test 5: Analytics KPIs & Leaderboard ---');
-  const kpiRes = await fetch('http://localhost:5000/api/analytics/kpis');
+  const forbiddenRes = await fetch('http://localhost:5000/api/analytics/kpis', { headers: receptionAuth });
+  if (forbiddenRes.status !== 403) {
+    throw new Error(`Test 5 Failed: receptionist analytics access returned ${forbiddenRes.status}, expected 403`);
+  }
+  console.log('✓ Receptionist blocked from manager analytics');
+
+  const kpiRes = await fetch('http://localhost:5000/api/analytics/kpis', { headers: ownerAuth });
   const kpiData: any = await kpiRes.json();
   console.log(`✓ Footfall: ${kpiData.totalVisits}, Total Revenue: ₹${kpiData.totalRevenue}, Conversion: ${kpiData.conversionRate}%`);
 
-  const repRes = await fetch('http://localhost:5000/api/analytics/rep-performance');
+  const repRes = await fetch('http://localhost:5000/api/analytics/rep-performance', { headers: ownerAuth });
   const repData: any = await repRes.json();
   console.log(`✓ Top Stylist: ${repData[0]?.name}, Closed: ${repData[0]?.sales_closed}, Conversion: ${repData[0]?.conversion_rate}%`);
 
